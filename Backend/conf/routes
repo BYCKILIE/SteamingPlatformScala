@@ -1,0 +1,16 @@
+GET     /                               controllers.HomeController.index()
+
+# Users Routes
+POST    /api/user-create                controllers.UsersController.createUser()
+GET     /api/user-read/:id              controllers.UsersController.readUser(id: Long)
+POST    /api/user-update/:id            controllers.UsersController.updateUser(id: Long)
+GET     /api/user-delete/:id            controllers.UsersController.deleteUser(id: Long)
+# --
+
+# Credentials Routes
+POST    /api/credentials-validate       controllers.CredentialsController.validateCredentials()
+POST    /api/credentials-create         controllers.CredentialsController.createCredentials()
+GET     /api/credentials-read/:id       controllers.CredentialsController.readCredentials(id: Long)
+POST    /api/credentials-update/:id     controllers.CredentialsController.updateCredentials(id: Long)
+GET     /api/credentials-delete/:id     controllers.CredentialsController.deleteCredentials(id: Long)
+# --
