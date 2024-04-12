@@ -1,20 +1,23 @@
 package services
 
-import DTO.CredentialsDTO
-import models.Tables.{Credentials, CredentialsRow}
-import repositories.CredentialsRepository
+import javax.inject.Inject
+import javax.inject.Singleton
 
-import play.api.db.slick.DatabaseConfigProvider
-import slick.jdbc.JdbcProfile
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
-import scala.concurrent.{ExecutionContext, Future}
+import models.Tables.Credentials
+import models.Tables.CredentialsRow
 import org.mindrot.jbcrypt.BCrypt
-
-import javax.inject.{Inject, Singleton}
+import play.api.db.slick.DatabaseConfigProvider
+import repositories.CredentialsRepository
+import slick.jdbc.JdbcProfile
+import DTO.CredentialsDTO
 
 @Singleton
-class CredentialsService @Inject()(protected val dbConfigProvider: DatabaseConfigProvider)
-                                  (implicit ex: ExecutionContext) extends CredentialsRepository {
+class CredentialsService @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(
+    implicit ex: ExecutionContext
+) extends CredentialsRepository {
 
   private val dbConfig = dbConfigProvider.get[JdbcProfile]
 
@@ -26,11 +29,13 @@ class CredentialsService @Inject()(protected val dbConfigProvider: DatabaseConfi
       case (_, "NULL") => validateUsername(credentials.username)
       case _           => validateEmail(credentials.email)
     }
-    matches.map { credentialRow =>
-      credentialRow.find { credentialRow =>
-        BCrypt.checkpw(credentials.password, credentialRow.password)
+    matches
+      .map { credentialRow =>
+        credentialRow.find { credentialRow =>
+          BCrypt.checkpw(credentials.password, credentialRow.password)
+        }
       }
-    }.map(_.get.userId)
+      .map(_.get.userId)
   }
 
   private def validateUsername(username: String): Future[Seq[Credentials#TableElementType]] = {
@@ -42,10 +47,13 @@ class CredentialsService @Inject()(protected val dbConfigProvider: DatabaseConfi
   }
 
   def createCredentials(credentials: CredentialsDTO): Future[Boolean] = {
-    db.run(Credentials += CredentialsRow(
-      credentials.username,
-      credentials.email,
-      BCrypt.hashpw(credentials.password, BCrypt.gensalt()), credentials.userId)
+    db.run(
+      Credentials += CredentialsRow(
+        credentials.username,
+        credentials.email,
+        BCrypt.hashpw(credentials.password, BCrypt.gensalt()),
+        credentials.userId
+      )
     ).map(_ > 0)
   }
 
