@@ -1,5 +1,0 @@
-package repositories
-
-trait CommentsRepository {
-
-}
