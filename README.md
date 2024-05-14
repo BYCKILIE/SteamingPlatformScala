@@ -1,17 +1,17 @@
 Branch:
   - main:
-      L   documentation
+      -   documentation
   - backend:
-      L    server
-      L    security
-      L    video stream functionality
+      -    server
+      -    security
+      -    video stream functionality
   - frontend:
-      L    website design
-      L    video player
+      -    website design
+      -    video player
   - pyclient:
-      L    live streaming UI
+      -    live streaming UI
   - video_breaker:
-      L    app to bring the uploaded videos to the format use in the app
+      -    app to bring the uploaded videos to the format use in the app
 
 
 Backend:
