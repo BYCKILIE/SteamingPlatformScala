@@ -1,3 +1,19 @@
+Branch:
+  - main:
+      L   documentation
+  - backend:
+      L    server
+      L    security
+      L    video stream functionality
+  - frontend:
+      L    website design
+      L    video player
+  - pyclient:
+      L    live streaming UI
+  - video_breaker:
+      L    app to bring the uploaded videos to the format use in the app
+
+
 Backend:
   - Framework: This project is built upon the Scala Play 2 framework.
 
@@ -16,3 +32,7 @@ Backend:
   - Flexibility: The project architecture allows for easy customization and adaptation to evolving requirements, ensuring long-term viability and maintainability.
 
   - Data Pipeline: Tables -> (Services with Repositories) + DTO -> Controllers -> "URL"
+
+  - Security: BouncyCastle asymemtric encryption library
+
+  - Authentication: Token based auth generated with pdi.jwt
