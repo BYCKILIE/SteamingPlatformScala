@@ -1,0 +1,15 @@
+# ninja log v5
+1	2023	7372484576191774	CMakeFiles/video_breaker.dir/main.cpp.obj	72cd14d48607dc97
+2025	2472	7372484580547758	video_breaker.exe	cf8edd22e1ebcc25
+1	2101	7372488234700463	CMakeFiles/video_breaker.dir/main.cpp.obj	72cd14d48607dc97
+2101	2365	7372488236901356	video_breaker.exe	cf8edd22e1ebcc25
+2	2405	7372494279218069	CMakeFiles/video_breaker.dir/main.cpp.obj	72cd14d48607dc97
+2406	2661	7372494281337792	video_breaker.exe	cf8edd22e1ebcc25
+2	1864	7372495895800305	CMakeFiles/video_breaker.dir/main.cpp.obj	72cd14d48607dc97
+1864	2199	7372495898737529	video_breaker.exe	cf8edd22e1ebcc25
+6	3865	7372513775863617	CMakeFiles/video_breaker.dir/main.cpp.obj	72cd14d48607dc97
+3866	4472	7372513781192980	video_breaker.exe	cf8edd22e1ebcc25
+4	3916	7372516029900013	CMakeFiles/video_breaker.dir/main.cpp.obj	72cd14d48607dc97
+3917	4279	7372516032887824	video_breaker.exe	cf8edd22e1ebcc25
+5	3283	7372521292391502	CMakeFiles/video_breaker.dir/main.cpp.obj	72cd14d48607dc97
+3285	3961	7372521298437869	video_breaker.exe	cf8edd22e1ebcc25
