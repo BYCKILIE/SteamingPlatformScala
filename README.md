@@ -7,7 +7,7 @@ Backend:
 
   - Database Operations: "com.typesafe.play" and "com.typesafe.slick" are utilized for database operations, offering a smooth and intuitive interface for interacting with the PostgreSQL database.
 
-  - JSON Serialization: "com.lihaoyi" provides "upickle" for JSON serialization, enabling efficient data handling and exchange within the application, check app/utilities/JsonOp.scala and the DTO package.
+  - JSON Serialization: "circe" for JSON serialization, enabling efficient data handling and exchange within the application, check app/utilities/JsonOp.scala and the DTO package.
 
   - Security: Prioritizing security, "org.mindrot" is employed for password hashing using bcrypt, ensuring robust protection of sensitive user data such as password management.
 
