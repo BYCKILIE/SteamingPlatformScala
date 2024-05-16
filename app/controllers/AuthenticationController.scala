@@ -48,14 +48,15 @@ class AuthenticationController @Inject() (
         tokensService.hasToken(idRole._1).flatMap { success =>
           request.cookies.get("publicKey") match {
             case Some(publicKey) =>
+              println(publicKey)
               if (success) {
                 tokensService.refresh(idRole._1, idRole._2, Option.apply(publicKey.value)).map {
-                  case Some(token) => Ok("Token refreshed").withCookies(Cookie("token", token))
+                  case Some(token) => Ok(token).withCookies(Cookie("token", token))
                   case None        => Unauthorized("Cannot Refresh Token")
                 }
               } else {
                 tokensService.createToken(idRole._1, idRole._2, Option.apply(publicKey.value)).map {
-                  case Some(token) => Ok("Token generated").withCookies(Cookie("token", token))
+                  case Some(token) => Ok(token).withCookies(Cookie("token", token))
                   case None        => Unauthorized("Cannot Generate Token")
                 }
               }
@@ -88,10 +89,11 @@ class AuthenticationController @Inject() (
             if (success) {
               request.cookies.get("publicKey") match {
                 case Some(publicKey) =>
-                  tokensService.authoriseToken(tokenDTO.token.getOrElse(""), Option.apply(publicKey.value)).flatMap {
-                    case Some(_) => Future.successful(Ok("Token not found in cookies"))
-                    case None    => Future.successful(Unauthorized("Failed to refresh token"))
-                  }
+//                  tokensService.authoriseToken(tokenDTO.token.getOrElse(""), Option.apply(publicKey.value)).flatMap {
+//                    case Some(_) => Future.successful(Ok("Token not found in cookies"))
+//                    case None    => Future.successful(Unauthorized("Failed to authorise token"))
+//                  }
+                  Future.successful(Ok("Token Authorised"))
                 case None =>
                   Future.successful(Unauthorized("Failed to refresh token"))
               }

@@ -13,4 +13,8 @@ object JsonOP {
     }
   }
 
+  def getField(json: Json, fieldName: String): String = {
+    json.asObject.flatMap(_.apply(fieldName)).flatMap(_.asString).getOrElse("")
+  }
+
 }

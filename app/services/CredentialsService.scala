@@ -133,4 +133,8 @@ class CredentialsService @Inject() (protected val dbConfigProvider: DatabaseConf
     db.run(Credentials.filter(_.userId === id).delete).map(_ > 0)
   }
 
+  def isRegistered(email: String): Future[Boolean] = {
+    db.run(Credentials.filter(_.email === email).result.headOption.map(_.isDefined))
+  }
+
 }

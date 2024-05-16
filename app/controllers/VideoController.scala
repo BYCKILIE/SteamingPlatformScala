@@ -3,35 +3,59 @@
 package controllers
 
 import java.io.File
-import java.nio.file.Files
-
-import akka.stream.scaladsl._
-import akka.util.ByteString
+import java.nio.file.Paths
 import javax.inject._
-import play.api._
-import play.api.http.HttpEntity
-import play.api.mvc._
 
 import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+
+import actors.VideoSenderActor
+import akka.actor.ActorSystem
+import akka.stream.scaladsl._
+import akka.stream.IOResult
+import akka.stream.Materializer
+import akka.util.ByteString
+import play.api._
+import play.api.http.HttpEntity
+import play.api.libs.streams.ActorFlow
+import play.api.mvc._
 
 @Singleton
-class VideoController @Inject()(cc: ControllerComponents)(implicit executionContext: ExecutionContext) extends AbstractController(cc) {
+class VideoController @Inject() (cc: ControllerComponents)(
+    implicit executionContext: ExecutionContext,
+    implicit val system: ActorSystem,
+    mat: Materializer,
+) extends AbstractController(cc) {
 
-  def streamVideo(videoPath: String, chunk: String, video: Boolean): Action[AnyContent] = Action { implicit request =>
-    val location = if (video) "videos" else "audios"
-    val format = if (video) "avi" else "wav"
+  def streamVideo(): Action[AnyContent] = Action.async { request =>
+    val file = Paths.get("posts_bank/test.mp4").toFile
 
-    val file = new File(s"posts_bank\\$location\\$videoPath\\chunk_$chunk.$format")
     if (file.exists()) {
-      val source = FileIO.fromPath(file.toPath)
-      val contentLength = file.length()
-      val entity = HttpEntity.Streamed(source, Some(contentLength), Some(s"video/avi"))
-      Result(
-        header = ResponseHeader(200),
-        body = entity
+      val fileSource: Source[ByteString, Future[IOResult]] = FileIO.fromPath(file.toPath)
+
+      val contentTypeHeader = "video/mp4"
+      val contentLength     = file.length()
+
+      val headers = Map(
+        CONTENT_DISPOSITION -> s"""inline; filename="test.mp4"""",
+      )
+
+      Future.successful(
+        Result(
+          header = ResponseHeader(200, headers),
+          body = HttpEntity.Streamed(fileSource, Some(contentLength), Some(contentTypeHeader))
+        )
       )
     } else {
-      NotFound("Video not found")
+      Future.successful(
+        NotFound("Video not found")
+      )
+    }
+  }
+
+  def receiveVideo(): WebSocket = WebSocket.accept[String, String] { request =>
+    ActorFlow.actorRef { out =>
+      VideoSenderActor.props(out)
     }
   }
 }

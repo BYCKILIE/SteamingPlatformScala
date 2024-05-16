@@ -84,7 +84,9 @@ class TokensService @Inject() (protected val dbConfigProvider: DatabaseConfigPro
             } else {
               Future.successful(None)
             }
-          case None => Future.successful(None)
+          case None => {
+            Future.successful(None)
+          }
         }
       case Failure(_) => Future.successful(None)
     }
