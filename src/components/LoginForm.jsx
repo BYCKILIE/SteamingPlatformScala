@@ -10,7 +10,14 @@ const LoginForm = () => {
     const [data, setData] = useState(null);
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
+
+    const [rememberMe, setRememberMe] = useState(false);
+
     const navigate = useNavigate();
+
+    const handleCheckboxChange = (event) => {
+        setRememberMe(event.target.checked);
+    };
 
     useEffect(() => {
         document.cookie = "publicKey=12";
@@ -24,6 +31,23 @@ const LoginForm = () => {
                     const responseData = response.data;
                     localStorage.setItem('sp_public', JSON.stringify(responseData));
                     setData(responseData);
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                });
+        }
+
+        const token = localStorage.getItem("token");
+        if (token !== null) {
+            document.cookie = `email=${token}`
+            axios.get(
+                'http://localhost:9000/api.authorise',
+                { withCredentials: true}
+            )
+                .then(response => {
+                    if (response.status === 200) {
+                        navigate("/home");
+                    }
                 })
                 .catch(error => {
                     console.error('Error fetching data:', error);
@@ -43,6 +67,9 @@ const LoginForm = () => {
             .then(response => {
                 const success = response.status;
                 if (success === 200) {
+                    if (rememberMe) {
+                        localStorage.setItem('token', response.data.toString())
+                    }
                     navigate('/homepage');
                 } else {
                     console.error('Login failed');
@@ -73,7 +100,11 @@ const LoginForm = () => {
 
                     <div className="remember-forgot">
                         <label>
-                            <input type={"checkbox"}/> Remember me
+                            <input
+                                type="checkbox"
+                                checked={rememberMe}
+                                onChange={handleCheckboxChange}
+                            /> Remember me
                         </label>
                         <a href={"#"}>Forgot password?</a>
                     </div>
