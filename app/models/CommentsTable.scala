@@ -2,7 +2,7 @@ package models
 // AUTO-GENERATED Slick data model for table Comments
 trait CommentsTable {
 
-  self:TablesRoot with ApplicationPostTable with LiveStreamTable with PostTable with UsersTable  =>
+  self:TablesRoot with PostTable with UsersTable  =>
 
   import profile.api._
   import slick.model.ForeignKeyAction
@@ -12,20 +12,18 @@ trait CommentsTable {
    *  @param data Database column data SqlType(varchar), Length(1000,true), Default(None)
    *  @param userId Database column user_id SqlType(int8)
    *  @param postId Database column post_id SqlType(int8), Default(None)
-   *  @param applicationPostId Database column application_post_id SqlType(int8), Default(None)
-   *  @param liveStreamId Database column live_stream_id SqlType(int8), Default(None)
    *  @param postingDate Database column posting_date SqlType(varchar), Length(16,true), Default(None) */
-  case class CommentsRow(data: Option[String] = None, userId: Long, postId: Option[Long] = None, applicationPostId: Option[Long] = None, liveStreamId: Option[Long] = None, postingDate: Option[String] = None)
+  case class CommentsRow(data: Option[String] = None, userId: Long, postId: Option[Long] = None, postingDate: Option[String] = None)
   /** GetResult implicit for fetching CommentsRow objects using plain SQL queries */
   implicit def GetResultCommentsRow(implicit e0: GR[Option[String]], e1: GR[Long], e2: GR[Option[Long]]): GR[CommentsRow] = GR{
     prs => import prs._
-    CommentsRow.tupled((<<?[String], <<[Long], <<?[Long], <<?[Long], <<?[Long], <<?[String]))
+    CommentsRow.tupled((<<?[String], <<[Long], <<?[Long], <<?[String]))
   }
   /** Table description of table comments. Objects of this class serve as prototypes for rows in queries. */
   class Comments(_tableTag: Tag) extends profile.api.Table[CommentsRow](_tableTag, "comments") {
-    def * = (data, userId, postId, applicationPostId, liveStreamId, postingDate).<>(CommentsRow.tupled, CommentsRow.unapply)
+    def * = (data, userId, postId, postingDate).<>(CommentsRow.tupled, CommentsRow.unapply)
     /** Maps whole row to an option. Useful for outer joins. */
-    def ? = ((data, Rep.Some(userId), postId, applicationPostId, liveStreamId, postingDate)).shaped.<>({r=>import r._; _2.map(_=> CommentsRow.tupled((_1, _2.get, _3, _4, _5, _6)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+    def ? = ((data, Rep.Some(userId), postId, postingDate)).shaped.<>({r=>import r._; _2.map(_=> CommentsRow.tupled((_1, _2.get, _3, _4)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
 
     /** Database column data SqlType(varchar), Length(1000,true), Default(None) */
     val data: Rep[Option[String]] = column[Option[String]]("data", O.Length(1000,varying=true), O.Default(None))
@@ -33,17 +31,9 @@ trait CommentsTable {
     val userId: Rep[Long] = column[Long]("user_id")
     /** Database column post_id SqlType(int8), Default(None) */
     val postId: Rep[Option[Long]] = column[Option[Long]]("post_id", O.Default(None))
-    /** Database column application_post_id SqlType(int8), Default(None) */
-    val applicationPostId: Rep[Option[Long]] = column[Option[Long]]("application_post_id", O.Default(None))
-    /** Database column live_stream_id SqlType(int8), Default(None) */
-    val liveStreamId: Rep[Option[Long]] = column[Option[Long]]("live_stream_id", O.Default(None))
     /** Database column posting_date SqlType(varchar), Length(16,true), Default(None) */
     val postingDate: Rep[Option[String]] = column[Option[String]]("posting_date", O.Length(16,varying=true), O.Default(None))
 
-    /** Foreign key referencing ApplicationPost (database name comments_application_post_id_fkey) */
-    lazy val applicationPostFk = foreignKey("comments_application_post_id_fkey", applicationPostId, ApplicationPost)(r => Rep.Some(r.id), onUpdate=ForeignKeyAction.NoAction, onDelete=ForeignKeyAction.NoAction)
-    /** Foreign key referencing LiveStream (database name comments_live_stream_id_fkey) */
-    lazy val liveStreamFk = foreignKey("comments_live_stream_id_fkey", liveStreamId, LiveStream)(r => Rep.Some(r.id), onUpdate=ForeignKeyAction.NoAction, onDelete=ForeignKeyAction.NoAction)
     /** Foreign key referencing Post (database name comments_post_id_fkey) */
     lazy val postFk = foreignKey("comments_post_id_fkey", postId, Post)(r => Rep.Some(r.id), onUpdate=ForeignKeyAction.NoAction, onDelete=ForeignKeyAction.NoAction)
     /** Foreign key referencing Users (database name comments_user_id_fkey) */

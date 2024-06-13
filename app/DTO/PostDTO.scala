@@ -4,7 +4,7 @@ import io.circe._
 import io.circe.generic.semiauto._
 import io.circe.syntax.EncoderOps
 
-case class PostDTO(id: Long, views: Option[Int] = Some(0), likes: Option[Int] = Some(0), dislikes: Option[Int] = Some(0), userId: Long, title: Option[String] = None, description: Option[String] = None, postingDate: Option[String] = None, path: String)
+case class PostDTO(id: Long, views: Option[Int] = Some(0), likes: Option[Int] = Some(0), dislikes: Option[Int] = Some(0), userId: Long = 0L, title: String, description: Option[String] = None, postingDate: String, path: String, postType: String, thumbnail: String)
 
 object PostDTO {
   implicit val postDecoder: Decoder[PostDTO] = deriveDecoder[PostDTO]

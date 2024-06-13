@@ -4,7 +4,7 @@ import io.circe._
 import io.circe.generic.semiauto._
 import io.circe.syntax.EncoderOps
 
-case class CommentsDTO(data: Option[String] = None, userId: Long, postId: Option[Long] = None, applicationPostId: Option[Long] = None, liveStreamId: Option[Long] = None, postingDate: Option[String] = None)
+case class CommentsDTO(data: Option[String] = None, userId: Long, postId: Option[Long] = None, postingDate: Option[String] = None)
 
 object CommentsDTO {
   implicit val commentsDecoder: Decoder[CommentsDTO] = deriveDecoder[CommentsDTO]

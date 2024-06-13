@@ -1,129 +1,108 @@
 package controllers
 
 import javax.inject._
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{Future, ExecutionContext}
 import play.api.libs.json._
-import play.api.libs.json.Format.GenericFormat
 import play.api.mvc._
-import utilities.JsonOP
-import services.{CredentialsService, UsersService}
+import services.{CredentialsService, RegisterService, UsersService}
+import utils.JsonOP
 import DTO.{CredentialsDTO, UsersDTO}
 
 @Singleton
-class RegisterController @Inject() (cc: ControllerComponents,
-                                    userService: UsersService,
-                                    credentialsService: CredentialsService)(
-  implicit ec: ExecutionContext
+class RegisterController @Inject() (
+    cc: ControllerComponents,
+    userService: UsersService,
+    credentialsService: CredentialsService,
+    registerService: RegisterService
+)(
+    implicit ec: ExecutionContext
 ) extends AbstractController(cc) {
 
-  def register: Action[AnyContent] = Action.async { implicit request =>
+  private val emailRegex = "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$".r
+  private def isValid(email: String): Boolean = {
+    email match {
+      case emailRegex(_*) => true
+      case _ => false
+    }
+  }
+
+  def migrate: Action[AnyContent] = Action.async { implicit request =>
     val json = JsonOP.parseString(request.body.asJson.get.toString())
 
+    val id       = JsonOP.getField(json, "id")
     val username = JsonOP.getField(json, "username")
-    val email = JsonOP.getField(json, "email")
     val password = JsonOP.getField(json, "password")
-    val firstName = JsonOP.getField(json, "firstName")
-    val lastName = JsonOP.getField(json, "lastName")
-    val birthDate = JsonOP.getField(json, "birthDate")
-    val gender = JsonOP.getField(json, "gender")
 
-    println(username)
-    println(email)
-    println(password)
-    println(firstName)
-    println(lastName)
-    println(birthDate)
-    println(gender)
+    registerService.readTemp(id).flatMap { user =>
+      registerService.deleteTemp(id)
 
-    val userCreationResult = userService.createUser(UsersDTO(0, firstName, lastName, birthDate, gender.toInt))
-    val credentialsCreationResult = userCreationResult.flatMap { userId =>
-      credentialsService.createCredentials(CredentialsDTO(username, email, password, userId, Option("normal")))
-    }
-    credentialsCreationResult.map { success =>
-      if (success) {
-        Ok(Json.obj("message" -> "Credentials created successfully"))
-      } else {
-        InternalServerError(Json.obj("message" -> "Failed to create user"))
+      userService.createUser(UsersDTO(0, user.firstName, user.lastName, user.birthDate, user.gender)).flatMap {
+        userId =>
+          if (userId > 0) {
+            credentialsService
+              .createCredentials(CredentialsDTO(username, user.email, password, userId, Option("normal")))
+              .flatMap { success =>
+                if (success) {
+                  Future.successful(Ok(Json.obj("message" -> "User created")))
+                } else {
+                  userService.deleteUser(userId)
+                  Future.successful(InternalServerError(Json.obj("message" -> "Failed to register user")))
+                }
+              }
+          } else {
+            Future.successful(InternalServerError(Json.obj("message" -> "Failed to create user")))
+          }
       }
     }.recover {
-      case e: Exception =>
-        InternalServerError(Json.obj("message" -> s"An error occurred: ${e.getMessage}"))
+      case _: NoSuchElementException => NotFound(Json.obj("error" -> "User not found"))
+      case ex: Throwable             => InternalServerError(Json.obj("error" -> ex.getMessage))
+    }
+  }
+
+  def completeTemp: Action[AnyContent] = Action.async { implicit request =>
+    val json = JsonOP.parseString(request.body.asJson.get.toString())
+
+    val id        = JsonOP.getField(json, "id")
+    val firstName = JsonOP.getField(json, "firstName")
+    val lastName  = JsonOP.getField(json, "lastName")
+    val birthDate = JsonOP.getField(json, "birthDate")
+    val gender    = JsonOP.getField(json, "gender").toInt
+
+    val numerical = Seq(1, 2, 3, 4, 5, 6, 7, 8, 9, 0)
+    if (firstName.contains(numerical) || lastName.contains(numerical)) {
+      Future.successful(NotAcceptable)
+    }
+
+    registerService.completeTemp(id, firstName, lastName, birthDate, gender).map { success =>
+      if (success) {
+        Ok
+      } else {
+        InternalServerError
+      }
     }
   }
 
   def isRegistered: Action[AnyContent] = Action.async { implicit request =>
-    val json = JsonOP.parseString(request.body.asJson.get.toString())
+    val json  = JsonOP.parseString(request.body.asJson.get.toString())
     val email = JsonOP.getField(json, "email")
-    credentialsService.isRegistered(email).map { success =>
+
+    if (!isValid(email)) {
+      Future.successful(NotAcceptable)
+    }
+
+    credentialsService.isRegistered(email).flatMap { success =>
       if (success) {
-        Ok
+        Future.successful(Ok)
       } else {
-        NotFound
+        registerService.createTemp(email).flatMap { created =>
+          if (created != "error") {
+            Future.successful(Created(created))
+          } else {
+            Future.successful(InternalServerError)
+          }
+        }
       }
     }
-  }
-
-  def createUser(): Action[AnyContent] = Action.async { implicit request =>
-    userService
-      .createUser(UsersDTO.decode(request.body.asJson.get.toString()))
-      .map { success =>
-        if (success > 0) {
-          Ok(Json.obj("message" -> s"User created successfully at $success id"))
-        } else {
-          InternalServerError(Json.obj("message" -> "Failed to create user"))
-        }
-      }
-      .recover {
-        case e: Exception =>
-          InternalServerError(Json.obj("message" -> s"An error occurred: ${e.getMessage}"))
-      }
-  }
-
-  def readUser(id: Long): Action[AnyContent] = Action.async { implicit request =>
-    userService
-      .readUser(id)
-      .map { user =>
-        Ok(UsersDTO.encode(user))
-      }
-      .recover {
-        case _: NoSuchElementException =>
-          NotFound(s"User not found with id: $id")
-        case ex: Exception =>
-          InternalServerError(s"An error occurred: ${ex.getMessage}")
-      }
-  }
-
-  def updateUser(id: Long): Action[AnyContent] = Action.async { implicit request =>
-    val updatedUser = UsersDTO.decode(request.body.asJson.get.toString())
-    userService
-      .updateUser(id, updatedUser)
-      .map { success =>
-        if (success) {
-          Ok("User updated successfully")
-        } else {
-          NotFound("User not found")
-        }
-      }
-      .recover {
-        case ex: Exception =>
-          InternalServerError(s"An error occurred: ${ex.getMessage}")
-      }
-  }
-
-  def deleteUser(id: Long): Action[AnyContent] = Action.async { implicit request =>
-    userService
-      .deleteUser(id)
-      .map { success =>
-        if (success) {
-          Ok("User deleted successfully")
-        } else {
-          NotFound("User not found")
-        }
-      }
-      .recover {
-        case ex: Exception =>
-          InternalServerError(s"An error occurred: ${ex.getMessage}")
-      }
   }
 
 }

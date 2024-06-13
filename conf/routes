@@ -1,28 +1,29 @@
-GET         /                                  controllers.HomeController.index()
-
-# Credentials Routes
-POST        /api.credentials-validate          controllers.CredentialsController.validateCredentials()
-POST        /api.credentials-create            controllers.CredentialsController.createCredentials()
-GET         /api.credentials-read/:id          controllers.CredentialsController.readCredentials(id: Long)
-POST        /api.credentials-update/:id        controllers.CredentialsController.updateCredentials(id: Long)
-GET         /api.credentials-delete/:id        controllers.CredentialsController.deleteCredentials(id: Long)
+GET         /                             controllers.HomeController.index()
 
 # Authentication / Authorisation
-POST        /api.authenticate                  controllers.AuthenticationController.authenticate()
-GET         /api.authorise                     controllers.AuthenticationController.authorise()
-GET         /api.get-public                    controllers.AuthenticationController.sendPublicKey()
+POST        /api/authenticate             controllers.AuthenticationController.authenticate
+GET         /api/authorise                controllers.AuthenticationController.authorise
+GET         /api/get-public               controllers.AuthenticationController.sendPublicKey
+GET         /api/get-connected            controllers.AuthenticationController.getConnected
 
 # Register
-POST        /api.register                      controllers.RegisterController.register
-POST        /api.register/is-valid             controllers.RegisterController.isRegistered()
+POST        /api/register.migrate         controllers.RegisterController.migrate
+POST        /api/register.complete        controllers.RegisterController.completeTemp
+POST        /api/register.is-valid        controllers.RegisterController.isRegistered
 
-# Websocket
-GET         /api.send-video                    controllers.VideoController.receiveVideo
+# Swagger
+GET         /swagger.json                 controllers.Assets.at(path="/public", file="swagger.json")
+GET         /docs/swagger-ui              controllers.SwaggerController.index
 
-GET         /swagger.json                      controllers.Assets.at(path="/public", file="swagger.json")
-GET         /docs/swagger-ui                   controllers.SwaggerController.index
+# video
+GET         /api/stream-video             controllers.VideoController.streamVideo(videoId: Long)
+POST        /api/upload                   controllers.VideoController.uploadVideo
+GET         /api/videos                   controllers.VideoController.listVideos
 
-GET         /api.stream-video                  controllers.VideoController.streamVideo()
+# livestream
+GET         /api/stream                   controllers.LivestreamController.stream(streamId: Long)
+GET         /api/join-stream              controllers.LivestreamController.joinLivestream(streamId: Long)
 
+GET         /api/chat                     controllers.WebSocketController.chat(chatId: Long)
 #GET         /mail                              controllers.AuthenticationController.sendMail()
 

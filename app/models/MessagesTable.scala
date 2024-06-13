@@ -2,7 +2,7 @@ package models
 // AUTO-GENERATED Slick data model for table Messages
 trait MessagesTable {
 
-  self:TablesRoot with LiveStreamTable with UsersTable with UsersTable  =>
+  self:TablesRoot with UsersTable with UsersTable  =>
 
   import profile.api._
   import slick.model.ForeignKeyAction
@@ -37,12 +37,10 @@ trait MessagesTable {
     /** Database column posting_date SqlType(varchar), Length(16,true), Default(None) */
     val postingDate: Rep[Option[String]] = column[Option[String]]("posting_date", O.Length(16,varying=true), O.Default(None))
 
-    /** Foreign key referencing LiveStream (database name messages_live_stream_id_fkey) */
-    lazy val liveStreamFk = foreignKey("messages_live_stream_id_fkey", liveStreamId, LiveStream)(r => Rep.Some(r.id), onUpdate=ForeignKeyAction.NoAction, onDelete=ForeignKeyAction.NoAction)
     /** Foreign key referencing Users (database name messages_receiver_id_fkey) */
-    lazy val usersFk2 = foreignKey("messages_receiver_id_fkey", receiverId, Users)(r => Rep.Some(r.id), onUpdate=ForeignKeyAction.NoAction, onDelete=ForeignKeyAction.NoAction)
+    lazy val usersFk1 = foreignKey("messages_receiver_id_fkey", receiverId, Users)(r => Rep.Some(r.id), onUpdate=ForeignKeyAction.NoAction, onDelete=ForeignKeyAction.NoAction)
     /** Foreign key referencing Users (database name messages_sender_id_fkey) */
-    lazy val usersFk3 = foreignKey("messages_sender_id_fkey", senderId, Users)(r => r.id, onUpdate=ForeignKeyAction.NoAction, onDelete=ForeignKeyAction.NoAction)
+    lazy val usersFk2 = foreignKey("messages_sender_id_fkey", senderId, Users)(r => r.id, onUpdate=ForeignKeyAction.NoAction, onDelete=ForeignKeyAction.NoAction)
   }
   /** Collection-like TableQuery object for table Messages */
   lazy val Messages = new TableQuery(tag => new Messages(tag))

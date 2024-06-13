@@ -1,6 +1,8 @@
 package services
 
+import java.time.format.DateTimeFormatter
 import java.time.Instant
+import java.time.LocalDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -25,7 +27,7 @@ import DTO.TokensDTO
  */
 @Singleton
 class TokensService @Inject() (protected val dbConfigProvider: DatabaseConfigProvider)(implicit ex: ExecutionContext)
-  extends TokensRepository {
+    extends TokensRepository {
 
   private val dbConfig = dbConfigProvider.get[JdbcProfile]
 
@@ -34,6 +36,13 @@ class TokensService @Inject() (protected val dbConfigProvider: DatabaseConfigPro
 
   private val secretKey = "serverKey"
   private val algo      = JwtAlgorithm.HS256
+
+  val dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm")
+
+  private def getNowTimeString: String = {
+    val now = LocalDateTime.now()
+    now.format(dateFormatter)
+  }
 
   /**
    * Generates a new authentication token.
@@ -45,8 +54,13 @@ class TokensService @Inject() (protected val dbConfigProvider: DatabaseConfigPro
    */
   def createToken(userId: Long, role: Option[String], publicKey: Option[String]): Future[Option[String]] = {
     val token = generateToken(userId, role, publicKey)
-    db.run(Tokens += TokensRow(userId = Option(userId), token = Option.apply(token)))
-      .map(success => if (success > 0) Option.apply(token) else Option.empty)
+    db.run(
+      Tokens += TokensRow(
+        userId = Option(userId),
+        token = Option.apply(token),
+        createdAt = Option.apply(getNowTimeString)
+      )
+    ).map(success => if (success > 0) Option.apply(token) else Option.empty)
   }
 
   /**
@@ -58,7 +72,7 @@ class TokensService @Inject() (protected val dbConfigProvider: DatabaseConfigPro
   def parseToken(token: String): Future[TokensDTO] = {
     Jwt.decode(token, secretKey, Seq(algo)) match {
       case Success(claim) =>
-        Future.apply(new TokensDTO(claim.jwtId.getOrElse("").toLongOption, claim.issuer, claim.subject))
+        Future.apply(new TokensDTO(claim.jwtId.getOrElse("").toLongOption, claim.issuer))
       case Failure(_) => Future.failed(new NoSuchElementException(s"Token Incorrect"))
     }
   }
@@ -77,18 +91,19 @@ class TokensService @Inject() (protected val dbConfigProvider: DatabaseConfigPro
           case Some(expiration) =>
             val now = Instant.now.getEpochSecond
             if (expiration > now) {
-              refresh(claim.jwtId.getOrElse("").toLong, claim.issuer, publicKey).flatMap {
-                case Some(t) => Future.successful(Some(t))
-                case None    => Future.successful(None)
+              refresh(token, claim.jwtId.getOrElse("").toLong, claim.issuer, publicKey).map {
+                case Some(tkn) => Some(tkn)
+                case None =>
+                  None
               }
             } else {
               Future.successful(None)
             }
-          case None => {
+          case None =>
             Future.successful(None)
-          }
         }
-      case Failure(_) => Future.successful(None)
+      case Failure(_) =>
+        Future.successful(None)
     }
   }
 
@@ -98,11 +113,11 @@ class TokensService @Inject() (protected val dbConfigProvider: DatabaseConfigPro
    * @param userId The ID of the user.
    * @return A future indicating whether the user has a token.
    */
-  def hasToken(userId: Long): Future[Boolean] = {
+  def hasToken(userId: Long): Future[Option[String]] = {
     db.run(Tokens.filter(tokensRow => tokensRow.userId === userId).result.headOption)
       .map {
-        case Some(_) => true
-        case None    => false
+        case Some(user) => user.token
+        case None       => None
       }
   }
 
@@ -114,19 +129,40 @@ class TokensService @Inject() (protected val dbConfigProvider: DatabaseConfigPro
    * @param publicKey  The public key.
    * @return A future containing the refreshed token, if successful.
    */
-  def refresh(userId: Long, role: Option[String], publicKey: Option[String]): Future[Option[String]] = {
+  def refresh(
+      usedToken: String,
+      userId: Long,
+      role: Option[String],
+      publicKey: Option[String]
+  ): Future[Option[String]] = {
     val token = generateToken(userId, role, publicKey)
     db.run(Tokens.filter(_.userId === userId).result.headOption).flatMap {
       case Some(existingToken) =>
-        val updated = existingToken.copy(
-          token = Option.apply(token)
-        )
-        db.run(Tokens.filter(_.userId === userId).update(updated)).map(_ > 0).flatMap { updatedRows =>
-          if (updatedRows) Future.successful(Some(token))
-          else Future.successful(None)
+        if (existingToken.token.getOrElse("") == usedToken) {
+          val updated = existingToken.copy(
+            token = Option.apply(token),
+            createdAt = Option.apply(getNowTimeString)
+          )
+          db.run(Tokens.filter(_.userId === userId).update(updated)).map(_ > 0).flatMap { updatedRows =>
+            if (updatedRows) Future.successful(Some(token))
+            else Future.successful(None)
+          }
+        } else {
+          Future.successful(None)
         }
       case None =>
         Future.successful(None)
+    }
+  }
+
+  def getLoggedIn: Future[Int] = {
+    val comparator = LocalDateTime.now().minusHours(1)
+    db.run(Tokens.result).map { rows =>
+      val validRows = rows.filter { row =>
+        val rowDate = LocalDateTime.parse(row.createdAt.getOrElse(""), dateFormatter)
+        comparator.isBefore(rowDate)
+      }
+      validRows.length
     }
   }
 

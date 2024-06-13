@@ -8,7 +8,7 @@ object Tables extends Tables {
 /** Slick data model trait for extension, choice of backend or usage in the cake pattern. (Make sure to initialize this late.)
     Each generated XXXXTable trait is mixed in this trait hence allowing access to all the TableQuery lazy vals.
   */
-trait Tables extends TablesRoot with CredentialsTable with UsersTable with LiveStreamTable with ApplicationPostTable with MessagesTable with PostTable with TokensTable with CommentsTable with HistoryTable {
+trait Tables extends TablesRoot with CredentialsTable with MessagesTable with UsersTable with PostTable with TokensTable with CommentsTable with HistoryTable {
   val profile: slick.jdbc.JdbcProfile
   import profile.api._
   import slick.model.ForeignKeyAction
@@ -16,7 +16,7 @@ trait Tables extends TablesRoot with CredentialsTable with UsersTable with LiveS
   import slick.jdbc.{GetResult => GR}
 
   /** DDL for all tables. Call .create to execute. */
-  lazy val schema: profile.SchemaDescription = Array(ApplicationPost.schema, Comments.schema, Credentials.schema, History.schema, LiveStream.schema, Messages.schema, Post.schema, Tokens.schema, Users.schema).reduceLeft(_ ++ _)
+  lazy val schema: profile.SchemaDescription = Array(Comments.schema, Credentials.schema, History.schema, Messages.schema, Post.schema, Tokens.schema, Users.schema).reduceLeft(_ ++ _)
   @deprecated("Use .schema instead of .ddl", "3.0")
   def ddl = schema
 

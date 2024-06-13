@@ -16,6 +16,9 @@ lazy val root = (project in file("."))
       "org.postgresql"      % "postgresql"     % "42.7.2",
       "com.typesafe.slick" %% "slick-hikaricp" % "3.4.1",
 
+      // MongoDB driver
+      "org.mongodb.scala" %% "mongo-scala-driver" % "5.1.0",
+
       // JSON parser
       "io.circe" %% "circe-core"    % "0.14.7",
       "io.circe" %% "circe-generic" % "0.14.6",
@@ -44,6 +47,6 @@ lazy val root = (project in file("."))
       "com.typesafe.akka" %% "akka-slf4j" % "2.8.5",
       "com.typesafe.akka" %% "akka-serialization-jackson" % "2.8.5",
       "com.typesafe.akka" %% "akka-protobuf-v3" % "2.8.5",
-      "com.typesafe.akka" %% "akka-stream" % "2.8.5"
+      "com.typesafe.akka" %% "akka-stream" % "2.8.5",
     )
   )

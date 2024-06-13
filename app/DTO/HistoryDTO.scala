@@ -4,7 +4,7 @@ import io.circe._
 import io.circe.generic.semiauto._
 import io.circe.syntax.EncoderOps
 
-case class HistoryDTO(userId: Long, postId: Option[Long] = None, applicationPostId: Option[Long] = None, liveStreamId: Option[Long] = None, profileId: Option[Long] = None, postingDate: Option[String] = None)
+case class HistoryDTO(userId: Long, postId: Option[Long] = None, profileId: Option[Long] = None, viewingDate: Option[String] = None)
 
 object HistoryDTO {
   implicit val historyDecoder: Decoder[HistoryDTO] = deriveDecoder[HistoryDTO]

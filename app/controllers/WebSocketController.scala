@@ -1,23 +1,23 @@
 package controllers
 
+import actors.chat.{ChatManagerActor, ChatClientActor}
 import javax.inject._
-import scala.concurrent.ExecutionContext
 import play.api.libs.streams.ActorFlow
 import play.api.mvc._
-import actors.WebSocketActor
-import akka.actor.ActorSystem
+import akka.actor.{ActorRef, ActorSystem}
 import akka.stream.Materializer
 
 @Singleton
 class WebSocketController @Inject() (cc: ControllerComponents)(
     implicit system: ActorSystem,
     mat: Materializer,
-    ec: ExecutionContext
 ) extends AbstractController(cc) {
 
-  def socket(id: String): WebSocket = WebSocket.accept[String, String] { request =>
+  private val chatActor: ActorRef = system.actorOf(ChatManagerActor.props)
+
+  def chat(chatId: Long): WebSocket = WebSocket.accept[String, String] { _ =>
     ActorFlow.actorRef { out =>
-      WebSocketActor.props(out, id)
+      ChatClientActor.props(chatId, out, chatActor)
     }
   }
 }

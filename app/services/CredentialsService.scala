@@ -96,7 +96,7 @@ class CredentialsService @Inject() (protected val dbConfigProvider: DatabaseConf
   override def readCredentials(id: Long): Future[CredentialsDTO] = {
     db.run(Credentials.filter(_.userId === id).result.headOption).flatMap {
       case Some(crd) =>
-        Future.successful(CredentialsDTO(crd.username, crd.email, "NULL", 0))
+        Future.successful(CredentialsDTO(crd.username, crd.email, "NULL", 0, crd.role))
       case None =>
         Future.failed(new NoSuchElementException(s"Credentials with id $id not found"))
     }
@@ -115,7 +115,8 @@ class CredentialsService @Inject() (protected val dbConfigProvider: DatabaseConf
         val updated = existingCredentials.copy(
           username = updatedCredentials.username.toLowerCase,
           email = updatedCredentials.email.toLowerCase,
-          password = BCrypt.hashpw(updatedCredentials.password, BCrypt.gensalt())
+          password = BCrypt.hashpw(updatedCredentials.password, BCrypt.gensalt()),
+          role = updatedCredentials.role
         )
         db.run(Credentials.filter(_.userId === id).update(updated)).map(_ > 0)
       case None =>

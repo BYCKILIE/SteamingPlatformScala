@@ -11,8 +11,8 @@ object VideoSenderActor {
 class VideoSenderActor(out: ActorRef) extends Actor {
 
   override def receive: Receive = {
-    case msg: String =>
-      out ! ""
+    case image: String =>
+      out ! image
   }
 
 }

@@ -6,15 +6,18 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.Operation
+import play.api.libs.json.Json
+
+import java.util.Base64
 //import play.api.libs.mailer.{Email, MailerClient}
 import play.api.mvc.AbstractController
 import play.api.mvc.Action
 import play.api.mvc.AnyContent
 import play.api.mvc.ControllerComponents
-import play.api.mvc.Cookie
 import services.CredentialsService
 import services.TokensService
-import utilities.Encryptor
+import utils.Encryptor
+import utils.JsonOP
 import DTO.CredentialsDTO
 
 @Singleton
@@ -38,6 +41,10 @@ class AuthenticationController @Inject() (
     )
   )
   def authenticate(): Action[AnyContent] = Action.async { implicit request =>
+    val reqJson = JsonOP.parseString(request.body.asJson.getOrElse("").toString)
+    val cKey    = JsonOP.getField(reqJson, "pKey")
+    println(s"cKey: $cKey")
+    println(s"us: ${JsonOP.getField(reqJson, "username")}")
     credentialsService
       .validateCredentials(
         CredentialsDTO.decode(
@@ -45,23 +52,17 @@ class AuthenticationController @Inject() (
         )
       )
       .flatMap { idRole =>
-        tokensService.hasToken(idRole._1).flatMap { success =>
-          request.cookies.get("publicKey") match {
-            case Some(publicKey) =>
-              println(publicKey)
-              if (success) {
-                tokensService.refresh(idRole._1, idRole._2, Option.apply(publicKey.value)).map {
-                  case Some(token) => Ok(token).withCookies(Cookie("token", token))
-                  case None        => Unauthorized("Cannot Refresh Token")
-                }
-              } else {
-                tokensService.createToken(idRole._1, idRole._2, Option.apply(publicKey.value)).map {
-                  case Some(token) => Ok(token).withCookies(Cookie("token", token))
-                  case None        => Unauthorized("Cannot Generate Token")
-                }
-              }
-            case None => Future.successful(Unauthorized("Invalid publicKey"))
-          }
+        tokensService.hasToken(idRole._1).flatMap {
+          case Some(usedToken) =>
+            tokensService.refresh(usedToken, idRole._1, idRole._2, Option.apply(cKey)).map {
+              case Some(token) => Ok(token)
+              case None        => Unauthorized("Cannot Refresh Token")
+            }
+          case None =>
+            tokensService.createToken(idRole._1, idRole._2, Option.apply(cKey)).map {
+              case Some(token) => Ok(token)
+              case None        => Unauthorized("Cannot Generate Token")
+            }
         }
       }
       .recover {
@@ -81,25 +82,21 @@ class AuthenticationController @Inject() (
     )
   )
   def authorise(): Action[AnyContent] = Action.async { implicit request =>
-    request.cookies.get("token") match {
-      case Some(cookie) =>
-        val token = cookie.value
+    request.headers.get("Authorization") match {
+      case Some(token) =>
         tokensService.parseToken(token).flatMap { tokenDTO =>
-          tokensService.hasToken(tokenDTO.userId.getOrElse(0)).flatMap { success =>
-            if (success) {
+          tokensService.hasToken(tokenDTO.userId.getOrElse(0)).flatMap {
+            case Some(usedToken) =>
               request.cookies.get("publicKey") match {
                 case Some(publicKey) =>
-//                  tokensService.authoriseToken(tokenDTO.token.getOrElse(""), Option.apply(publicKey.value)).flatMap {
-//                    case Some(_) => Future.successful(Ok("Token not found in cookies"))
-//                    case None    => Future.successful(Unauthorized("Failed to authorise token"))
-//                  }
-                  Future.successful(Ok("Token Authorised"))
+                  tokensService.authoriseToken(usedToken, Option.apply(publicKey.value)).map {
+                    case Some(tkn) => Ok(s"{token: $tkn, pKey: ${Encryptor.serverKey.getPublic.toString}}")
+                    case None      => Unauthorized("Failed to authorise token")
+                  }
                 case None =>
                   Future.successful(Unauthorized("Failed to refresh token"))
               }
-            } else {
-              Future.successful(Unauthorized("Token expired"))
-            }
+            case None => Future.successful(Unauthorized("Failed to extract token"))
           }
         }
       case None =>
@@ -114,8 +111,14 @@ class AuthenticationController @Inject() (
       new ApiResponse(responseCode = "200", description = "Server public key retrieved")
     )
   )
-  def sendPublicKey(): Action[AnyContent] = Action { implicit request =>
-    Ok(utilities.Encryptor.serverKey.getPublic.getFormat)
+  def sendPublicKey(): Action[AnyContent] = Action.async { implicit request =>
+    Future.successful(Ok(Base64.getEncoder.encodeToString(utils.Encryptor.serverKey.getPublic.getEncoded)))
+  }
+
+  def getConnected: Action[AnyContent] = Action.async { implicit request =>
+    tokensService.getLoggedIn.flatMap { count =>
+      Future.successful(Ok(Json.stringify(Json.obj("connectedCount" -> count))))
+    }
   }
 
 //  def sendMail(): Action[AnyContent] = Action { implicit request =>

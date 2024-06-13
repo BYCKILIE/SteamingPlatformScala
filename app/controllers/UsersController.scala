@@ -7,7 +7,7 @@ import scala.concurrent.ExecutionContext
 import play.api.libs.json._
 import play.api.libs.json.Format.GenericFormat
 import play.api.mvc._
-import utilities.JsonOP
+import utils.JsonOP
 import DTO.UsersDTO
 
 @Singleton
