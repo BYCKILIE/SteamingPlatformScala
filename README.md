@@ -36,3 +36,8 @@ Backend:
   - Security: BouncyCastle asymemtric encryption library
 
   - Authentication: Token based auth generated with pdi.jwt
+
+RTMP:
+  - NGINX config
+  - rtmp server for OBS connection
+  - http server config for streaming the data to the react client
