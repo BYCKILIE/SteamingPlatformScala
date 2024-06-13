@@ -3,11 +3,11 @@ import {FaUser, FaLock} from "react-icons/fa";
 import {useNavigate} from "react-router-dom";
 
 import {useState, useEffect} from 'react';
-import axios from 'axios';
+import { generateKeyPair } from '../utils/Encryptor';
+import apiClient from "../utils/AxiosConfig.jsx";
+import pki from "node-forge/lib/x509.js";
 
 const LoginForm = () => {
-    // eslint-disable-next-line no-unused-vars
-    const [data, setData] = useState(null);
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
 
@@ -20,17 +20,19 @@ const LoginForm = () => {
     };
 
     useEffect(() => {
-        document.cookie = "publicKey=12";
+        // const keyPair = generateKeyPair();
+        // const publicKeyPem = pki.publicKeyToPem(keyPair.publicKey);
+        // const privateKeyPem = pki.privateKeyToPem(keyPair.privateKey);
+        //
+        // sessionStorage.setItem("pb_key", publicKeyPem);
+        // sessionStorage.setItem("pr_key", privateKeyPem);
 
-        const storedData = localStorage.getItem('sp_public');
-        if (storedData) {
-            setData(storedData);
-        } else {
-            axios.get('http://localhost:9000/api.get-public')
+        const storedData = sessionStorage.getItem('s_public');
+        if (!storedData) {
+            apiClient.get('/get-public')
                 .then(response => {
                     const responseData = response.data;
-                    localStorage.setItem('sp_public', JSON.stringify(responseData));
-                    setData(responseData);
+                    sessionStorage.setItem('s_public', responseData);
                 })
                 .catch(error => {
                     console.error('Error fetching data:', error);
@@ -39,13 +41,13 @@ const LoginForm = () => {
 
         const token = localStorage.getItem("token");
         if (token !== null) {
-            document.cookie = `email=${token}`
-            axios.get(
-                'http://localhost:9000/api.authorise',
-                { withCredentials: true}
+            apiClient.post(
+                '/authorise',
+                {publicKeyPem}
             )
                 .then(response => {
                     if (response.status === 200) {
+                        localStorage.setItem("token", response.data);
                         navigate("/home");
                     }
                 })
@@ -53,24 +55,23 @@ const LoginForm = () => {
                     console.error('Error fetching data:', error);
                 });
         }
-    }, []);
+    }, [navigate]);
 
     const handleSubmit = (event) => {
         event.preventDefault();
-        axios.post(
-            'http://localhost:9000/api.authenticate',
-            {username: username, email: "NULL", password: password, userId: 0, role: "NULL"},
-            {
-                withCredentials: true
-            }
+        apiClient.post(
+            '/authenticate',
+            {username: username, email: "NULL", password: password, userId: 0, role: "NULL", pKey: sessionStorage.getItem("pb_key")},
         )
             .then(response => {
                 const success = response.status;
                 if (success === 200) {
                     if (rememberMe) {
-                        localStorage.setItem('token', response.data.toString())
+                        localStorage.setItem('token', response.data)
+                    } else {
+                        sessionStorage.setItem('token', response.data)
                     }
-                    navigate('/homepage');
+                    navigate('/home');
                 } else {
                     console.error('Login failed');
                 }

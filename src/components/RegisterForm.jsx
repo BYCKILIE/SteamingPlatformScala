@@ -1,8 +1,7 @@
 import "../styles/RegisterForm.css";
 import {FaUser, FaLock} from "react-icons/fa";
 import {Link, useNavigate} from "react-router-dom";
-import {getCookie} from "../utils/CookieParser.jsx"
-import axios from "axios";
+import apiClient from "../utils/AxiosConfig.jsx";
 import {useState} from "react";
 
 const RegisterForm = () => {
@@ -19,28 +18,18 @@ const RegisterForm = () => {
             return
         }
 
-        const date = new Date(getCookie("birthDate"));
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const formattedDateString = `${year}-${month}-${day}`;
-
-        axios.post(
-            'http://localhost:9000/api.register',
+        apiClient.post(
+            '/register.migrate',
             {
+                id: sessionStorage.getItem("_id"),
                 username: username,
-                email: getCookie("email"),
-                password: password,
-                firstName: getCookie("firstName"),
-                lastName: getCookie("lastName"),
-                birthDate: formattedDateString,
-                gender: getCookie("gender")
+                password: password
             }
         )
             .then(response => {
                 const success = response.status;
                 if (success === 200) {
-                    navigate('/homepage');
+                    navigate('/login');
                 }
             })
     };

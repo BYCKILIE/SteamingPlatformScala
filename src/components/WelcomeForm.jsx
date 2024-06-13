@@ -3,7 +3,7 @@ import {useNavigate} from "react-router-dom";
 import {useState} from "react";
 
 import {validateEmail} from "../utils/EmailValidator.jsx"
-import axios from "axios";
+import apiClient from "../utils/AxiosConfig.jsx";
 
 const WelcomeForm = () => {
     const [email, setEmail] = useState('');
@@ -18,20 +18,22 @@ const WelcomeForm = () => {
             return;
         }
 
-        axios.post(
-            'http://localhost:9000/api.register/is-valid',
+        apiClient.post(
+            '/register.is-valid',
             {email: email}
         )
             .then(response => {
                 const success = response.status;
                 if (success === 200) {
                     navigate('/homepage');
+                } else if (success === 201) {
+                    sessionStorage.setItem("_id", response.data);
+                    setTimeout(() => {
+                        sessionStorage.removeItem("_id");
+                    }, 30 * 60 * 1000);
+                    navigate('/register.p-data');
                 }
             })
-
-        document.cookie = `email=${email}; expires=${new Date(Date.now() + 86400e3).toUTCString()}; path=/register.cred`;
-
-        navigate('/register.p-data');
     };
 
     return (

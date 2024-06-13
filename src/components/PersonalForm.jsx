@@ -5,13 +5,16 @@ import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 
 import {FaUser} from "react-icons/fa";
+import apiClient from "../utils/AxiosConfig.jsx";
 
 const PersonalForm = () => {
     const navigate = useNavigate();
 
+    const initialDate = new Date(2000, 0, 1);
+
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
-    const [birthDate, setBirthDate] = useState(null);
+    const [birthDate, setBirthDate] = useState(initialDate);
     const [gender, setGender] = useState('');
 
     const handleBirthDateChange = (date) => {
@@ -24,12 +27,27 @@ const PersonalForm = () => {
     const handleSubmit = (event) => {
         event.preventDefault();
 
-        document.cookie = `firstName=${firstName}; expires=${new Date(Date.now() + 86400e3).toUTCString()}; path=/register.cred`;
-        document.cookie = `lastName=${lastName}; expires=${new Date(Date.now() + 86400e3).toUTCString()}; path=/register.cred`;
-        document.cookie = `birthDate=${birthDate}; expires=${new Date(Date.now() + 86400e3).toUTCString()}; path=/register.cred`;
-        document.cookie = `gender=${gender}; expires=${new Date(Date.now() + 86400e3).toUTCString()}; path=/register.cred`;
+        const year = birthDate.getFullYear();
+        const month = String(birthDate.getMonth() + 1).padStart(2, '0');
+        const day = String(birthDate.getDate()).padStart(2, '0');
+        const formattedDateString = `${year}-${month}-${day}`;
 
-        navigate('/register.cred');
+        apiClient.post(
+            '/register.complete',
+            {
+                id: sessionStorage.getItem("_id"),
+                firstName: firstName,
+                lastName: lastName,
+                birthDate: formattedDateString,
+                gender: gender
+            }
+        )
+            .then(response => {
+                const success = response.status;
+                if (success === 200) {
+                    navigate('/register.cred');
+                }
+            })
     };
 
     return (
@@ -53,6 +71,9 @@ const PersonalForm = () => {
                             selected={birthDate}
                             onChange={handleBirthDateChange}
                             placeholderText="Birth date"
+                            showYearDropdown
+                            scrollableYearDropdown
+                            yearDropdownItemNumber={15}
                             required
                         />
                         <FaUser className={"icon"}/>
