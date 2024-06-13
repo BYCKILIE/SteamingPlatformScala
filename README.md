@@ -12,6 +12,8 @@ Branch:
       -    live streaming UI
   - video_breaker:
       -    app to bring the uploaded videos to the format use in the app
+  - RTMP_Server:
+      -    livestreaming logic
 
 
 Backend:
